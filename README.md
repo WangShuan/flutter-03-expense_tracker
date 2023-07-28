@@ -1,5 +1,7 @@
 # expense_tracker
 
+筆記連結：<https://hackmd.io/wx7x7XRyQ_K_J-KGJlMhjw?view>
+
 該專案主要架構有一個 Appbar ，裏面顯示 app 標題以及 icon 按鈕，點擊 icon 按鈕後可開啟 modal 以新增消費紀錄； Appbar 下方則顯示圖表，分別列出每種類別的消費佔比；最後圖表下方則是列出所有消費紀錄的清單，其中有消費類別、標題、消費日期以及消費金額。
 
 ## 重點紀錄
