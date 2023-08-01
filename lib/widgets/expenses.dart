@@ -1,10 +1,10 @@
-import 'package:expense_tracker/widgets/chart/chart.dart';
 import 'package:flutter/material.dart';
 
 import '../data/expenses.dart';
 import '../models/expense.dart';
 import './expenses_list/expenses_list.dart';
 import './new_expense.dart';
+import './chart/chart.dart';
 
 class Expenses extends StatefulWidget {
   const Expenses({super.key});
@@ -61,7 +61,11 @@ class _ExpensesState extends State<Expenses> {
         ),
       );
     }
+
+    final isWideScreen = MediaQuery.of(context).size.width > 600;
+
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Expenses Tracker'),
         actions: [
@@ -73,7 +77,7 @@ class _ExpensesState extends State<Expenses> {
                   padding: EdgeInsets.only(
                     bottom: MediaQuery.of(context).viewInsets.bottom,
                   ),
-                  child: NewExpense(_addData),
+                  child: SingleChildScrollView(child: NewExpense(_addData)),
                 ),
                 isScrollControlled: true,
               );
@@ -84,34 +88,77 @@ class _ExpensesState extends State<Expenses> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: 16,
-          horizontal: 8,
-        ),
-        child: Column(
-          children: [
-            Text(
-              'Chart',
-              style: Theme.of(context).textTheme.titleLarge,
+      body: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: 16,
+              horizontal: 8,
             ),
-            const SizedBox(
-              height: 8,
-            ),
-            Chart(_sortExpensesData),
-            const SizedBox(
-              height: 16,
-            ),
-            Text(
-              'Records',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(
-              height: 8,
-            ),
-            mainContent,
-          ],
-        ),
+            child: isWideScreen
+                ? Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Text(
+                              'Chart',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(
+                              height: 8,
+                            ),
+                            Expanded(
+                              child: Chart(_sortExpensesData),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 16,
+                      ),
+                      SizedBox(
+                        width: constraints.maxWidth * 0.55,
+                        child: Column(
+                          children: [
+                            Text(
+                              'Records',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(
+                              height: 8,
+                            ),
+                            mainContent,
+                          ],
+                        ),
+                      )
+                    ],
+                  )
+                : Column(
+                    children: [
+                      Text(
+                        'Chart',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(
+                        height: 8,
+                      ),
+                      Chart(_sortExpensesData),
+                      const SizedBox(
+                        height: 16,
+                      ),
+                      Text(
+                        'Records',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(
+                        height: 8,
+                      ),
+                      mainContent,
+                    ],
+                  ),
+          );
+        },
       ),
     );
   }

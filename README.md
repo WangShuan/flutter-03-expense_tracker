@@ -4,9 +4,7 @@
 
 該專案主要架構有一個 Appbar ，裏面顯示 app 標題以及 icon 按鈕，點擊 icon 按鈕後可開啟 modal 以新增消費紀錄； Appbar 下方則顯示圖表，分別列出每種類別的消費佔比；最後圖表下方則是列出所有消費紀錄的清單，其中有消費類別、標題、消費日期以及消費金額。
 
-## 重點紀錄
-
-### 定義 Expense 藍圖
+## 定義 Expense 藍圖
 
 `uuid` 套件可用來生成隨機的唯一 id，可通過指令 `flutter pub add uuid` 安裝套件，使用方式如下：
 
@@ -72,9 +70,9 @@ get formatterTime {
 }
 ```
 
-### 認識與使用新的小部件
+## 認識與使用新的小部件
 
-`ListView` 小部件，需搭配 `Expanded` 使用：
+不確定陣列長度時，可使用 `ListView.builder` 小部件，該小部件外層需具有寬高，如果外層為 `Row` 或 `Column` 時，需搭配 `Expanded` 或 `SizedBox` 小部件做使用：
 
 ```dart
 final List<Expense> expenseData;
@@ -91,7 +89,7 @@ Expanded(
 )
 ```
 
-使用 `modal` 小部件顯示表單，用以新增消費紀錄：
+使用 `showModalBottomSheet` 方法從底部往上彈出 `modal` 以顯示表單新增消費紀錄：
 
 ```dart
 appBar: AppBar( // 在 Scaffold 小部件中設置 appbar
@@ -130,6 +128,7 @@ TextField(
     label: Text('標題'), // 設置 label
   ),
   maxLength: 30, // 設置輸入內容的最大長度限制
+
 ),
 
 // 獲取值
@@ -145,20 +144,19 @@ Row(
       child: TextField(
         controller: _priceController,
         decoration: const InputDecoration(
-          label: Text('價格'),
-          prefixText: 'NT\$ ', // 這邊是用來設定輸入框值的前綴，這樣在輸入價格時可以看到數字前面多了  NT$
+          labelText: '消費價格',
+          prefixText: 'NT\$',
         ),
-        maxLength: 10,
-        keyboardType: TextInputType.number,
+        maxLength: 6,
+        keyboardType: const TextInputType.numberWithOptions(signed: true), // 設定鍵盤類型為數字＋符號（因為純 TextInputType.number 鍵盤類型會沒送出按鈕）
+        textInputAction: TextInputAction.done, // 設定點擊送出按鈕後執行的事件為完成，會關閉鍵盤並提交（如果是 TextInputAction.next 則會跳去下一個輸入框小部件並開啟其鍵盤類型）
+        onSubmitted: (value) => _submitData(), // 設定送出時要執行的事件
       ),
     ),
     const SizedBox(
       width: 30,
     ),
-    ElevatedButton(
-      onPressed: () {},
-      child: const Text('請選擇日期'),
-    ),
+    // ...
   ],
 ),
 ```
@@ -174,7 +172,7 @@ ElevatedButton(
 )
 ```
 
-點擊按鈕開啟日期選擇器及顯示選中日期的做法：
+點擊按鈕開啟日期選擇器（使用 `showDatePicker` 方法）及顯示選中日期的做法：
 
 ```dart
 DateTime? _selectedDate_; // 聲明一個變量保存選中的日期，類型為 null 或 DateTime
@@ -206,7 +204,7 @@ ElevatedButton.icon( // 建立一個帶 icon 的按鈕小部件
 ),
 ```
 
-類別下拉選項小部件：
+`DropdownButton` + `DropdownMenuItem` 小部件用來顯示類別的下拉選項：
 
 ```dart
 // 宣告變量 _selectCate 為第一個 Category
@@ -263,7 +261,7 @@ Container( // 建立 Container 小部件當外框並設定樣式
 )
 ```
 
-驗證表單並提交：
+撰寫提交表單的事件，如驗證無誤則添加消費紀錄、如驗證有誤則通過 `showDialog` 方法顯示 `AlertDialog` 小部件：
 
 ```dart
 void _submitData() { // 建立一個提交表單用的事件
@@ -340,14 +338,13 @@ void removeExpenses(Expense expense) {
 
 Dismissible(
   key: ValueKey(expenseData[i].id), // 設置唯一 key
-  child: ExpenseItem(
-    expenseData[i],
-  ),
+  child: ExpenseItem(expenseData[i]), // 設定滑動的小部件，這邊是單筆消費紀錄
+  direction: DismissDirection.startToEnd, // 設定觸發事件的滑動方向，其他滑動方向則不會觸發任何事
   onDismissed: (direction) => removeExpenses(expenseData[i]), // 設置滑動後要執行的事件
 )
 ```
 
-於刪除事件後產生提示訊息，可用 `SnackBar` 小部件：
+在滑動觸發刪除消費紀錄事件後，產生已刪除的提示訊息，可用 `SnackBar` 小部件：
 
 ```dart
 ScaffoldMessenger.of(context).clearSnackBars(); // 再產生新的 SnackBar 之前先清除舊的
@@ -509,6 +506,8 @@ class ExpenseBucket {
 }
 ```
 
+### 水平圖表作法
+
 建立 `chart.dart` 檔案用來顯示統計圖表：
 
 ```dart
@@ -635,4 +634,195 @@ Column(
       const Divider(), // 分隔線小部件
   ],
 );
+```
+
+## 垂直圖表做法
+
+將 `Chart.dart` 的 `Column` 改為 `Row`：
+
+```dart
+Row( // 用 Row 小部件生成由左到右的排列
+  crossAxisAlignment: CrossAxisAlignment.end, // 設置內容對齊方式為垂直貼底
+  children: [
+    ...allCategory.map(
+      (e) => Expanded( // 將 ChartBar 小部件用 Expanded 包住，以佔據所有空間
+        child: ChartBar(e, total, maxTotal, allCategory),
+      ),
+    ),
+  ],
+),
+```
+
+將 `chart_bat.dart` 最外層的 `Row` 改為 `Column` ，讓類別名稱與填色區塊垂直排列，接著將原本用來設置 `LinearProgressIndicator` 小部件外觀圓角的 `ClipRRect` 小部件刪除，並將 `LinearProgressIndicator` 改為 `FractionallySizedBox` 小部件，整體內容如下：
+
+```dart
+final ExpenseBucket item; // 各個分類的數據
+final int total; // 總金額
+final int maxTotal; // 分類當中最高的金額
+
+Column(
+  mainAxisAlignment: MainAxisAlignment.end, // 設置讓條狀圖統一靠下
+  children: [
+    Column( // 用來在填色條狀上方顯示類別名稱/圖標/所佔據百分比
+      children: [
+        Icon( // 顯示類別 icon
+          cateIcon[item.category],
+          size: 20,
+          color:
+              isDarkMode ? kDarkColorS.primary : kColorS.onPrimaryContainer,
+        ),
+        const SizedBox(
+          height: 4,
+        ),
+        Text( // 顯示類別名稱
+          item.category.name.toUpperCase(),
+          style: TextStyle(
+            color: isDarkMode
+                ? kDarkColorS.primary
+                : kColorS.onPrimaryContainer,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(
+          height: 4,
+        ),
+        Text( // 用總金額下去計算，顯示類別佔據的百分比
+          '${(item.totalExpenses.toDouble() / total * 100).floor()}%',
+          style: Theme.of(context)
+              .textTheme
+              .bodyMedium
+              ?.copyWith(fontWeight: FontWeight.bold),
+        )
+      ],
+    ),
+    const SizedBox(
+      height: 4,
+    ),
+    Flexible( // 使用 Flexible 將 FractionallySizedBox 小部件包住
+      child: FractionallySizedBox( // 使用 FractionallySizedBox 小部件顯示填色條狀圖
+        heightFactor: item.totalExpenses.toDouble() / maxTotal, // 要填色的高度
+        child: Container( // 用 Container 小部件進行填色
+          width: 24,
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(4),
+              bottom: Radius.circular(0),
+            ),
+            color: isDarkMode
+                    ? kDarkColorS.onPrimaryContainer
+                    : kColorS.primary,
+          ),
+        ),
+      ),
+    ),
+  ],
+);
+```
+
+## 響應式設計
+
+獲取設備寬高的方式如下：
+
+```dart
+// 比如可判斷 width > 400 時顯示 Row 小部件、 width < 400 時顯示 Column 小部件
+final width = MediaQuery.of(context).size.width;
+
+// 比如可判斷 height > 400 時顯示 Column 小部件、 height < 400 時顯示 Row 小部件
+final height = MediaQuery.of(context).size.height;
+```
+
+獲取小部件寬高的方式：
+
+```dart
+LayoutBuilder( // 使用 LayoutBuilder 小部件包住欲計算的小部件
+  builder: (BuildContext context, BoxConstraints constraints) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        vertical: 16,
+        horizontal: 8,
+      ),
+      child: SizedBox(
+        width: constraints.maxWidth * 0.55, // 通過 constraints.maxWidth 獲取寬度
+        // constraints 共有 maxWidth/minWidth/maxHeight/minHeight 四種屬性值
+        child: Column(
+          children: [
+            Text(
+              'Records',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(
+              height: 8,
+            ),
+            mainContent,
+          ],
+        ),
+      ),
+    ),
+  },
+);
+```
+
+判斷設備當前方向為直立或橫向：
+
+```dart
+final orientation = MediaQuery.of(context).orientation;
+
+if (orientation == Orientation.portrait) // 直立
+  Row(
+    children: [
+      Expanded(child: priceWidget), // 把消費價格的輸入框小部件設為 local variable 方便復用
+      const SizedBox(width: 16),
+      const Spacer()
+    ],
+  )
+else // 橫向
+  Row(
+    children: [
+      Expanded(child: titleWidget), // 把標題的輸入框小部件設為 local variable 方便復用
+      const SizedBox(width: 16),
+      SizedBox(width: 200, child: priceWidget), // 把消費價格的輸入框小部件設為 local variable 方便復用
+    ],
+  ),
+```
+
+## 自適應
+
+安卓設備使用 `Material` 主題，蘋果設備使用 `Cupertino` 主題，比如 `showDialog` vs `showCupertinoDialog` ，可通過以下方式判斷設備：
+
+```dart
+if (Platform.isIOS) { // 判斷是否為 IOS 系統
+  showCupertinoDialog(
+    context: context,
+    builder: (context) => CupertinoAlertDialog(
+      title: const Text('格式錯誤'),
+      content: const Text('請確保您輸入了有效的標題、消費價格、消費日期與消費類別。'),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: const Text('確定'),
+        )
+      ],
+    ),
+  );
+} else {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('格式錯誤'),
+      content: const Text('請確保您輸入了有效的標題、消費價格、消費日期與消費類別。'),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: const Text('確定'),
+        )
+      ],
+    ),
+  );
+}
 ```

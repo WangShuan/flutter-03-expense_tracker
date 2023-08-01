@@ -1,6 +1,6 @@
-import 'package:expense_tracker/main.dart';
 import 'package:flutter/material.dart';
 
+import '../../main.dart';
 import '../../models/expense.dart';
 
 class ExpenseItem extends StatelessWidget {
@@ -10,6 +10,7 @@ class ExpenseItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
@@ -20,12 +21,10 @@ class ExpenseItem extends StatelessWidget {
         child: Row(
           children: [
             CircleAvatar(
-              backgroundColor: Theme.of(context).brightness == Brightness.dark
-                  ? kDarkColorS.primary
-                  : kColorS.primary,
-              foregroundColor: Theme.of(context).brightness == Brightness.dark
-                  ? kDarkColorS.onPrimary
-                  : kColorS.onPrimary,
+              backgroundColor:
+                  isDarkMode ? kDarkColorS.primary : kColorS.primary,
+              foregroundColor:
+                  isDarkMode ? kDarkColorS.onPrimary : kColorS.onPrimary,
               child: Icon(
                 cateIcon[expenseData.category],
               ),

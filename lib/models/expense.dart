@@ -9,20 +9,15 @@ enum Category {
   shopping,
   medical,
   learn,
+  others,
 }
-
-const cateZhName = {
-  Category.food: '食物',
-  Category.learn: '學習',
-  Category.medical: '醫療',
-  Category.shopping: '購物'
-};
 
 const cateIcon = {
   Category.food: Icons.restaurant,
   Category.learn: Icons.menu_book,
   Category.medical: Icons.medical_services,
-  Category.shopping: Icons.store
+  Category.shopping: Icons.store,
+  Category.others: Icons.category,
 };
 
 class Expense {

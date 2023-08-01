@@ -10,40 +10,40 @@ class Chart extends StatelessWidget {
   final List<Expense> expenses;
 
   List<ExpenseBucket> get allCategory {
-    return [
-      ExpenseBucket.fromCategory(expenses, Category.food),
-      ExpenseBucket.fromCategory(expenses, Category.learn),
-      ExpenseBucket.fromCategory(expenses, Category.medical),
-      ExpenseBucket.fromCategory(expenses, Category.shopping),
-    ];
+    List<ExpenseBucket> arr = [];
+    for (var c in Category.values) {
+      arr.add(ExpenseBucket.fromCategory(expenses, c));
+    }
+    return arr;
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    int maxTotal = 0;
     int total = 0;
-    for (var item in allCategory) {
-      total += item.totalExpenses;
+    for (final cate in allCategory) {
+      if (cate.totalExpenses > maxTotal) maxTotal = cate.totalExpenses;
+      total += cate.totalExpenses;
     }
 
     return Container(
+      height: 240,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
-        color: Theme.of(context).brightness == Brightness.dark
-            ? kDarkColorS.onPrimary
-            : kColorS.secondaryContainer,
+        color: isDarkMode ? kDarkColorS.onPrimary : kColorS.secondaryContainer,
         border: Border.all(
-          width: 1,
-          color: Theme.of(context).brightness == Brightness.dark
-              ? kDarkColorS.primary
-              : kColorS.primary,
+          width: 2,
+          color: isDarkMode ? kDarkColorS.primary : kColorS.primary,
         ),
       ),
-      padding: const EdgeInsets.symmetric(
-        vertical: 8,
-      ),
-      child: Column(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
         children: [
-          ...allCategory.map((e) => ChartBar(e, total, allCategory)),
+          for (var e in allCategory)
+            Expanded(
+              child: ChartBar(e, total, maxTotal),
+            ),
         ],
       ),
     );

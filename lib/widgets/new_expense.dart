@@ -1,8 +1,12 @@
-import 'package:expense_tracker/main.dart';
+import 'dart:io';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/expense.dart';
+import './text_and_button.dart';
+import './text_and_dropdown.dart';
 
 class NewExpense extends StatefulWidget {
   const NewExpense(this.addData, {super.key});
@@ -39,26 +43,45 @@ class _NewExpenseState extends State<NewExpense> {
     });
   }
 
+  void _showAlert() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final alertWidget = Platform.isIOS
+            ? CupertinoAlertDialog(
+                content: const Text('請確保您輸入了有效的標題、消費價格、消費日期與消費類別。'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text('確定'),
+                  )
+                ],
+              )
+            : AlertDialog(
+                title: const Text('格式錯誤'),
+                content: const Text('請確保您輸入了有效的標題、消費價格、消費日期與消費類別。'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text('確定'),
+                  )
+                ],
+              );
+        return alertWidget;
+      },
+    );
+  }
+
   void _submitData() {
     if (_titleController.text.trim().isEmpty ||
         int.tryParse(_priceController.text) == null ||
         int.parse(_priceController.text) <= 0 ||
         _selectedDate == null) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('格式錯誤'),
-          content: const Text('請確保您輸入了有效的標題、消費價格、消費日期與消費類別。'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('確定'),
-            )
-          ],
-        ),
-      );
+      _showAlert();
       return;
     }
 
@@ -73,16 +96,29 @@ class _NewExpenseState extends State<NewExpense> {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = TextStyle(
-      fontSize: 14,
-      color: Theme.of(context).primaryColor,
+    final orientation = MediaQuery.of(context).orientation;
+
+    final priceWidget = TextField(
+      controller: _priceController,
+      decoration: const InputDecoration(
+        labelText: '消費價格',
+        prefixText: 'NT\$',
+      ),
+      maxLength: 6,
+      keyboardType: const TextInputType.numberWithOptions(signed: true),
+      onSubmitted: (value) => _submitData(),
+      textInputAction: TextInputAction.done,
     );
-    final labelStyle = TextStyle(
-      fontSize: 14,
-      color: Theme.of(context).brightness == Brightness.dark
-          ? kDarkColorS.onPrimaryContainer
-          : const Color.fromARGB(255, 55, 55, 55),
+
+    final titleWidget = TextField(
+      controller: _titleController,
+      decoration: const InputDecoration(
+        labelText: '標題',
+      ),
+      textInputAction: TextInputAction.next,
+      maxLength: 10,
     );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       child: Column(
@@ -91,14 +127,10 @@ class _NewExpenseState extends State<NewExpense> {
         children: [
           const Text(
             '新增消費紀錄',
-            style: TextStyle(
-              fontSize: 18,
-            ),
+            style: TextStyle(fontSize: 18),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(
-            height: 32,
-          ),
+          const SizedBox(height: 32),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -106,106 +138,31 @@ class _NewExpenseState extends State<NewExpense> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      '消費類別',
-                      style: labelStyle,
-                    ),
-                    Container(
-                      margin: const EdgeInsets.only(top: 4),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                      ),
-                      height: 40,
-                      width: 120,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? kDarkColorS.onPrimary
-                            : kColorS.onPrimary,
-                      ),
-                      child: DropdownButton<Category>(
-                        underline: const SizedBox(),
-                        isExpanded: true,
-                        items: Category.values
-                            .map(
-                              (e) => DropdownMenuItem<Category>(
-                                value: e,
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      cateIcon[e],
-                                      size: 16,
-                                      color: Theme.of(context).primaryColor,
-                                    ),
-                                    const SizedBox(
-                                      width: 4,
-                                    ),
-                                    Text(
-                                      cateZhName[e].toString(),
-                                      style: textStyle,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        value: _selectCate,
-                        icon: const Icon(
-                          Icons.arrow_drop_down_rounded,
-                          size: 16,
-                        ),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectCate = value;
-                          });
-                        },
-                      ),
+                    TextAndDropdown(
+                      label: '消費類別',
+                      value: _selectCate,
+                      items: Category.values,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectCate = value;
+                        });
+                      },
                     ),
                   ],
                 ),
               ),
-              const SizedBox(
-                width: 16,
-              ),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      '消費日期',
-                      style: labelStyle,
-                    ),
-                    TextButton.icon(
+                    TextAndButton(
+                      label: '消費日期',
+                      value: _selectedDate != null
+                          ? DateFormat('yyyy-MM-dd').format(_selectedDate!)
+                          : '請選擇',
                       onPressed: _chooseDate,
-                      style: TextButton.styleFrom(
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        backgroundColor:
-                            Theme.of(context).brightness == Brightness.dark
-                                ? kDarkColorS.onPrimary
-                                : kColorS.onPrimary,
-                        alignment: Alignment.centerLeft,
-                      ),
-                      label: _selectedDate != null
-                          ? Text(
-                              DateFormat('yyyy-MM-dd')
-                                  .format(_selectedDate!)
-                                  .toString(),
-                              style: textStyle,
-                              textAlign: TextAlign.left,
-                            )
-                          : Text(
-                              '請選擇',
-                              style: textStyle,
-                              textAlign: TextAlign.left,
-                            ),
-                      icon: Icon(
-                        Icons.calendar_today,
-                        size: 16,
-                        color: Theme.of(context).primaryColor,
-                      ),
+                      icon: Icons.calendar_today,
                     ),
                   ],
                 ),
@@ -215,47 +172,24 @@ class _NewExpenseState extends State<NewExpense> {
           const SizedBox(
             height: 16,
           ),
-          TextField(
-            controller: _titleController,
-            decoration: InputDecoration(
-              labelStyle: labelStyle,
-              labelText: '標題',
-              floatingLabelStyle: const TextStyle(),
-              contentPadding: const EdgeInsets.all(0),
+          if (orientation == Orientation.portrait) titleWidget,
+          if (orientation == Orientation.portrait)
+            Row(
+              children: [
+                Expanded(child: priceWidget),
+                const SizedBox(width: 16),
+                const Spacer()
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(child: titleWidget),
+                const SizedBox(width: 16),
+                SizedBox(width: 200, child: priceWidget),
+              ],
             ),
-            maxLength: 12,
-            style: const TextStyle(
-              height: 1,
-            ),
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _priceController,
-                  decoration: InputDecoration(
-                    labelStyle: labelStyle,
-                    labelText: '消費價格',
-                    prefixText: 'NT\$',
-                    floatingLabelStyle: const TextStyle(),
-                    contentPadding: const EdgeInsets.all(0),
-                  ),
-                  maxLength: 8,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(
-                    height: 1,
-                  ),
-                ),
-              ),
-              const SizedBox(
-                width: 16,
-              ),
-              const Spacer()
-            ],
-          ),
-          const SizedBox(
-            height: 16,
-          ),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -266,9 +200,7 @@ class _NewExpenseState extends State<NewExpense> {
                   child: const Text('取消'),
                 ),
               ),
-              const SizedBox(
-                width: 16,
-              ),
+              const SizedBox(width: 16),
               Expanded(
                 child: FilledButton(
                   onPressed: _submitData,
